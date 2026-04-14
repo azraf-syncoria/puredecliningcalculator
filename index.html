@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pure Declining Calculation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .glass-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s, ring 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .label-text {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #4b5563;
+            margin-bottom: 0.375rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .table-container {
+            max-height: 650px;
+            overflow-y: auto;
+        }
+
+        .table-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f9fafb;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+
+        .final-row-plug {
+            background-color: #fffbeb !important;
+            border-left: 4px solid #f59e0b;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { background: white; padding: 0; }
+            .glass-card { border: none; box-shadow: none; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-10 flex flex-col md:flex-row md:items-center justify-between no-print gap-4">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Pure Declining Calculation</h1>
+                <p class="text-gray-500 text-sm mt-1">Professional Grade Asset Depreciation Board</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="calculate()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Compute Schedule
+                </button>
+                <button onclick="window.print()" class="bg-white border border-gray-300 p-3 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Sidebar: Asset Parameters -->
+            <aside class="lg:col-span-4 space-y-6 no-print">
+                
+                <!-- Financials Section -->
+                <section class="glass-card p-6 rounded-2xl">
+                    <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">Asset Values</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="label-text">Original Value</label>
+                            <input type="number" id="originalVal" placeholder="0.00" step="0.01" class="input-field font-bold">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="label-text">Acquisition Date</label>
+                                <input type="date" id="acqDate" class="input-field text-xs">
+                            </div>
+                            <div>
+                                <label class="label-text">Non-Depreciable</label>
+                                <input type="number" id="residualVal" placeholder="Salvage" step="0.01" class="input-field">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Method Section -->
+                <section class="glass-card p-6 rounded-2xl border-l-4 border-l-blue-500">
+                    <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">Depreciation Parameters</h2>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="label-text">Declining Factor (%)</label>
+                                <input type="number" id="factor" placeholder="20" class="input-field">
+                            </div>
+                            <div>
+                                <label class="label-text">Duration (Months)</label>
+                                <input type="number" id="duration" placeholder="12" class="input-field">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label-text">Prorata Date (Start)</label>
+                            <input type="date" id="prorataDate" class="input-field bg-blue-50 border-blue-200">
+                            <span class="text-[10px] text-blue-600 mt-1 block italic font-medium">Daily proration applies to Month 1</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- History Section -->
+                <section class="glass-card p-6 rounded-2xl bg-gray-50">
+                    <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">Import Data</h2>
+                    <div>
+                        <label class="label-text">Already Depreciated</label>
+                        <input type="number" id="importDep" placeholder="0.00" step="0.01" class="input-field">
+                        <p class="text-[10px] text-gray-400 mt-2 leading-relaxed">Amount previously written off before this schedule.</p>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Main Panel: Output -->
+            <main class="lg:col-span-8">
+                <div id="results" class="hidden glass-card rounded-2xl overflow-hidden flex flex-col h-full min-h-[600px]">
+                    
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
+                        <div>
+                            <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Monthly Breakdown</span>
+                            <h2 class="text-xl font-black text-gray-800 uppercase">Computed Schedule</h2>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-black text-gray-400 uppercase">Starting Book Value</span>
+                            <div id="startValDisplay" class="text-2xl font-black text-gray-900"></div>
+                        </div>
+                    </div>
+
+                    <div class="table-container flex-grow">
+                        <table class="w-full text-left border-separate border-spacing-0">
+                            <thead class="sticky top-0 bg-gray-50 z-10">
+                                <tr>
+                                    <th class="px-6 py-4 border-b border-gray-100 text-[10px] font-black text-gray-400 uppercase">Period</th>
+                                    <th class="px-6 py-4 border-b border-gray-100 text-right text-[10px] font-black text-gray-400 uppercase">Depreciation</th>
+                                    <th class="px-6 py-4 border-b border-gray-100 text-right text-[10px] font-black text-gray-400 uppercase">Accumulated</th>
+                                    <th class="px-6 py-4 border-b border-gray-100 text-right text-[10px] font-black text-gray-400 uppercase">Residual</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody" class="text-sm font-medium text-gray-700 divide-y divide-gray-50 tabular-nums">
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="p-6 bg-gray-50 border-t border-gray-100 grid grid-cols-2 gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <span class="text-[11px] font-black text-gray-500 uppercase tracking-wider">Calculation Status: Active</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[11px] font-black text-gray-400 uppercase block mb-1">Target Residual</span>
+                            <span id="targetResidual" class="font-black text-gray-800"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty Placeholder -->
+                <div id="placeholder" class="h-full min-h-[600px] flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl border-2 border-dashed border-gray-200 no-print">
+                    <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <h3 class="text-lg font-black text-gray-700">Awaiting Input</h3>
+                    <p class="text-gray-400 text-sm mt-2 max-w-xs mx-auto">Fill the asset financials and depreciation parameters to generate your pure declining board.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Feedback Toast -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest opacity-0 transition-opacity pointer-events-none z-50">
+    </div>
+
+    <script>
+        function notify(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.remove('opacity-0');
+            setTimeout(() => t.classList.add('opacity-0'), 2500);
+        }
+
+        function currency(n) {
+            return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+        }
+
+        function calculate() {
+            const originalVal = parseFloat(document.getElementById('originalVal').value);
+            const residualVal = parseFloat(document.getElementById('residualVal').value) || 0;
+            const factor = parseFloat(document.getElementById('factor').value);
+            const duration = parseInt(document.getElementById('duration').value);
+            const prorataDateStr = document.getElementById('prorataDate').value;
+            const importDep = parseFloat(document.getElementById('importDep').value) || 0;
+
+            if (!originalVal || !factor || !duration || !prorataDateStr) {
+                return notify("Please complete all required fields.");
+            }
+
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = '';
+            
+            let currentBV = originalVal - importDep;
+            let currentAccum = importDep;
+            const startDate = new Date(prorataDateStr + 'T00:00:00');
+            const monthlyRate = (factor / 100) / 12;
+
+            // Prorata Day Calculation for Month 1
+            const day = startDate.getDate();
+            const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+            const ratio = (daysInMonth - day + 1) / daysInMonth;
+
+            for (let i = 1; i <= duration; i++) {
+                let dep = 0;
+                const isLast = (i === duration);
+                
+                const monthDate = new Date(startDate);
+                monthDate.setMonth(startDate.getMonth() + (i - 1));
+                const label = monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+
+                if (isLast) {
+                    dep = currentBV - residualVal;
+                } else if (i === 1) {
+                    dep = currentBV * monthlyRate * ratio;
+                } else {
+                    dep = currentBV * monthlyRate;
+                }
+
+                // Floor check to prevent dipping below residualVal early
+                if (!isLast && (currentBV - dep) < residualVal) {
+                    dep = currentBV - residualVal;
+                }
+
+                currentAccum += dep;
+                const closing = currentBV - dep;
+                
+                const tr = document.createElement('tr');
+                if (isLast) tr.className = 'final-row-plug';
+                
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-bold text-gray-500 text-[11px]">
+                        <span class="mr-3 text-gray-300">#${i.toString().padStart(2, '0')}</span> ${label}
+                    </td>
+                    <td class="px-6 py-4 text-right font-bold text-rose-600">
+                        ${currency(dep)}
+                    </td>
+                    <td class="px-6 py-4 text-right text-gray-400">
+                        ${currency(currentAccum)}
+                    </td>
+                    <td class="px-6 py-4 text-right font-black text-gray-900">
+                        ${closing <= (residualVal + 0.005) ? currency(residualVal) : currency(closing)}
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+                currentBV = closing;
+                if (currentBV <= residualVal && !isLast) break;
+            }
+
+            document.getElementById('startValDisplay').innerText = `CA$ ${currency(originalVal - importDep)}`;
+            document.getElementById('targetResidual').innerText = `CA$ ${currency(residualVal)}`;
+            document.getElementById('placeholder').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+
+            if (window.innerWidth < 1024) {
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    </script>
+</body>
+</html>
