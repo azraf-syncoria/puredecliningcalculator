@@ -242,7 +242,7 @@
             let currentBV = originalVal - importDep;
             let currentAccum = importDep;
             const startDate = new Date(prorataDateStr + 'T00:00:00');
-            const monthlyRate = (factor / 100) / 12;
+            const monthlyRate = (factor / 100) / duration;
 
             // Prorata Day Calculation for Month 1
             const day = startDate.getDate();
