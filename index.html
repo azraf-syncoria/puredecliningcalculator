@@ -68,6 +68,15 @@
             border-left: 4px solid #f59e0b;
         }
 
+        .year-divider {
+            background-color: #f8fafc;
+            font-weight: 800;
+            font-size: 0.65rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
         @media print {
             .no-print { display: none; }
             body { background: white; padding: 0; }
@@ -82,7 +91,7 @@
         <header class="mb-10 flex flex-col md:flex-row md:items-center justify-between no-print gap-4">
             <div>
                 <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Pure Declining Calculation</h1>
-                <p class="text-gray-500 text-sm mt-1">Professional Grade Asset Depreciation Board</p>
+                <p class="text-gray-500 text-sm mt-1">Yearly Interval Declining Balance Method</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="calculate()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2">
@@ -138,7 +147,7 @@
                         <div>
                             <label class="label-text">Prorata Date (Start)</label>
                             <input type="date" id="prorataDate" class="input-field bg-blue-50 border-blue-200">
-                            <span class="text-[10px] text-blue-600 mt-1 block italic font-medium">Daily proration applies to Month 1</span>
+                            <span class="text-[10px] text-blue-600 mt-1 block italic font-medium">Monthly amount is constant per year</span>
                         </div>
                     </div>
                 </section>
@@ -149,7 +158,7 @@
                     <div>
                         <label class="label-text">Already Depreciated</label>
                         <input type="number" id="importDep" placeholder="0.00" step="0.01" class="input-field">
-                        <p class="text-[10px] text-gray-400 mt-2 leading-relaxed">Amount previously written off before this schedule.</p>
+                        <p class="text-[10px] text-gray-400 mt-2 leading-relaxed">Schedule starts from this imported state.</p>
                     </div>
                 </section>
             </aside>
@@ -164,7 +173,7 @@
                             <h2 class="text-xl font-black text-gray-800 uppercase">Computed Schedule</h2>
                         </div>
                         <div class="text-right">
-                            <span class="text-[10px] font-black text-gray-400 uppercase">Starting Book Value</span>
+                            <span class="text-[10px] font-black text-gray-400 uppercase">Book Value at Start</span>
                             <div id="startValDisplay" class="text-2xl font-black text-gray-900"></div>
                         </div>
                     </div>
@@ -187,7 +196,7 @@
                     <div class="p-6 bg-gray-50 border-t border-gray-100 grid grid-cols-2 gap-4">
                         <div class="flex items-center gap-3">
                             <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span class="text-[11px] font-black text-gray-500 uppercase tracking-wider">Calculation Status: Active</span>
+                            <span class="text-[11px] font-black text-gray-500 uppercase tracking-wider">Status: Yearly Intervals</span>
                         </div>
                         <div class="text-right">
                             <span class="text-[11px] font-black text-gray-400 uppercase block mb-1">Target Residual</span>
@@ -201,8 +210,8 @@
                     <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-300">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </div>
-                    <h3 class="text-lg font-black text-gray-700">Awaiting Input</h3>
-                    <p class="text-gray-400 text-sm mt-2 max-w-xs mx-auto">Fill the asset financials and depreciation parameters to generate your pure declining board.</p>
+                    <h3 class="text-lg font-black text-gray-700">Ready to Compute</h3>
+                    <p class="text-gray-400 text-sm mt-2 max-w-xs mx-auto">This calculator applies declining balance annually and divides it equally across months within the same year.</p>
                 </div>
             </main>
         </div>
@@ -227,12 +236,12 @@
         function calculate() {
             const originalVal = parseFloat(document.getElementById('originalVal').value);
             const residualVal = parseFloat(document.getElementById('residualVal').value) || 0;
-            const factor = parseFloat(document.getElementById('factor').value);
-            const duration = parseInt(document.getElementById('duration').value);
+            const factorPercent = parseFloat(document.getElementById('factor').value);
+            const durationMonths = parseInt(document.getElementById('duration').value);
             const prorataDateStr = document.getElementById('prorataDate').value;
             const importDep = parseFloat(document.getElementById('importDep').value) || 0;
 
-            if (!originalVal || !factor || !duration || !prorataDateStr) {
+            if (!originalVal || !factorPercent || !durationMonths || !prorataDateStr) {
                 return notify("Please complete all required fields.");
             }
 
@@ -242,30 +251,50 @@
             let currentBV = originalVal - importDep;
             let currentAccum = importDep;
             const startDate = new Date(prorataDateStr + 'T00:00:00');
-            const monthlyRate = (factor / 100) / duration;
+            const annualRate = factorPercent / 100;
 
-            // Prorata Day Calculation for Month 1
-            const day = startDate.getDate();
-            const daysInMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
-            const ratio = (daysInMonth - day + 1) / daysInMonth;
+            let monthsRemaining = durationMonths;
+            let monthCounter = 0;
+            let currentYear = startDate.getFullYear();
 
-            for (let i = 1; i <= duration; i++) {
-                let dep = 0;
-                const isLast = (i === duration);
-                
+            // First month proration ratio (Days remaining in the first month)
+            const dayOfStart = startDate.getDate();
+            const daysInFirstMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+            const firstMonthRatio = (daysInFirstMonth - dayOfStart + 1) / daysInFirstMonth;
+
+            // We iterate month by month, but recalculate the "Monthly Amount" only at year-end boundaries
+            let monthlyDepAmount = 0;
+
+            for (let i = 1; i <= durationMonths; i++) {
+                const isLast = (i === durationMonths);
                 const monthDate = new Date(startDate);
                 monthDate.setMonth(startDate.getMonth() + (i - 1));
-                const label = monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
+                
+                // If it's the very first month OR we've crossed into a new year, calculate NEW annual/monthly rate
+                // Professional Method: Depreciation is constant throughout the fiscal year
+                if (i === 1 || monthDate.getMonth() === 0) {
+                    // New Annual Depreciation = Current BV * Rate
+                    // Monthly = Annual / 12
+                    monthlyDepAmount = (currentBV * annualRate) / 12;
 
+                    // Add a year label to the table
+                    const yearLabel = document.createElement('tr');
+                    yearLabel.className = 'year-divider';
+                    yearLabel.innerHTML = `<td colspan="4" class="px-6 py-2 bg-slate-50 border-y border-slate-100">Year ${monthDate.getFullYear()}</td>`;
+                    tbody.appendChild(yearLabel);
+                }
+
+                let dep = 0;
                 if (isLast) {
                     dep = currentBV - residualVal;
                 } else if (i === 1) {
-                    dep = currentBV * monthlyRate * ratio;
+                    // Prorate only the very first month's slice
+                    dep = monthlyDepAmount * firstMonthRatio;
                 } else {
-                    dep = currentBV * monthlyRate;
+                    dep = monthlyDepAmount;
                 }
 
-                // Floor check to prevent dipping below residualVal early
+                // Safety: Don't exceed residual
                 if (!isLast && (currentBV - dep) < residualVal) {
                     dep = currentBV - residualVal;
                 }
@@ -273,6 +302,7 @@
                 currentAccum += dep;
                 const closing = currentBV - dep;
                 
+                const label = monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
                 const tr = document.createElement('tr');
                 if (isLast) tr.className = 'final-row-plug';
                 
@@ -293,6 +323,7 @@
                 
                 tbody.appendChild(tr);
                 currentBV = closing;
+
                 if (currentBV <= residualVal && !isLast) break;
             }
 
